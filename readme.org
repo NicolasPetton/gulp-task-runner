@@ -1,0 +1,7 @@
+
+* Run Gulp tasks from Emacs
+
+This package provides a straightforward integration of [[http://gulpjs.com/][Gulp]] in Emacs.  Evaluate
+=M-x gulp= to get the list of gulp tasks of a project and run a task.
+
+Tasks are run in a compilation buffer.
