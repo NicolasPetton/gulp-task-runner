@@ -5,3 +5,8 @@ This package provides a straightforward integration of [[http://gulpjs.com/][Gul
 =M-x gulp= to get the list of gulp tasks of a project and run a task.
 
 Tasks are run in a compilation buffer.
+
+** Screenshots
+
+[[./screenshots/screenshot1.png]]
+[[./screenshots/screenshot2.png]]
