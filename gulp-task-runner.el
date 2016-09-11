@@ -35,9 +35,8 @@
     (compile (format "gulp %s" task))))
 
 (defun gulp--get-tasks ()
-  (with-temp-buffer
-    (shell-command "gulp --tasks-simple" (current-buffer))
-    (split-string (buffer-string) "\n")))
+  "Return a list of gulp tasks for the current project."
+  (process-lines "gulp" "--tasks-simple"))
 
 (provide 'gulp-task-runner)
 ;;; gulp-task-runner.el ends here
