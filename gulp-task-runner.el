@@ -26,6 +26,7 @@
 
 ;;; Code:
 
+;;;###autoload
 (defun gulp ()
   "Prompt for a gulp task and run it."
   (interactive)
