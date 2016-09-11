@@ -32,11 +32,16 @@
   (interactive)
   (let* ((tasks (gulp--get-tasks))
          (task (completing-read "Gulp task: " tasks)))
-    (compile (format "gulp %s" task))))
+    (let ((compilation-buffer-name-function #'gulp--get-buffer-name))
+     (compilation-start (format "gulp %s" task)))))
 
 (defun gulp--get-tasks ()
   "Return a list of gulp tasks for the current project."
   (process-lines "gulp" "--tasks-simple"))
+
+(defun gulp--get-buffer-name (&rest _)
+  "Return the name of a gulp task buffer."
+  "*gulp*")
 
 (provide 'gulp-task-runner)
 ;;; gulp-task-runner.el ends here
