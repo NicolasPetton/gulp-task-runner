@@ -37,10 +37,21 @@ forces reload of the task list from gulpfile.js."
   (interactive "P")
   (when prefix
     (gulp--invalidate-cache))
-  (let* ((tasks (gulp--get-tasks))
+  (let* ((gulpfile (or (gulp--current-gulpfile)
+                       (gulp--gulpfile-from-cache))))
+    (if gulpfile
+        (gulp--run-gulpfile gulpfile)
+      (warn "No gulpfile to get the tasks from"))))
+
+(defun gulp--run-gulpfile (gulpfile)
+  "Let the user choose a task from GULPFILE and run it."
+  (let* ((tasks (gulp--get-tasks gulpfile))
          (task (completing-read "Gulp task: " tasks)))
-    (let ((compilation-buffer-name-function #'gulp--get-buffer-name))
-      (compilation-start (format "gulp %s" task)))))
+    ;; Use a temporary buffer to change current directory
+    (with-temp-buffer
+      (cd (file-name-directory gulpfile))
+      (let ((compilation-buffer-name-function #'gulp--get-buffer-name))
+        (compilation-start (format "gulp %s" task))))))
 
 (defun gulp--add-to-cache (gulpfile tasks)
   "Add (GULPFILE TASKS) to `gulp--task-cache'."
@@ -52,17 +63,17 @@ forces reload of the task list from gulpfile.js."
 
 (defun gulp--invalidate-cache (&optional gulpfile)
   "Remove cached task list for GULPFILE.
-If GULPFILE is nil, remove task list for `gulp--get-gulpfile'."
-  (let ((gulpfile (or gulpfile (gulp--get-gulpfile))))
+If GULPFILE is nil, remove task list for `gulp--current-gulpfile'."
+  (let ((gulpfile (or gulpfile (gulp--current-gulpfile))))
     (gulp--add-to-cache gulpfile nil)))
 
-(defun gulp--get-gulpfile (&optional dir)
+(defun gulp--current-gulpfile (&optional dir)
   "Return path of the gulpfile from DIR or `default-directory'."
-  (let ((dir (or dir default-directory)))
-    (expand-file-name
-     "gulpfile.js"
-     (locate-dominating-file (or dir default-directory)
-                             "gulpfile.js"))))
+  (let* ((dir (or dir default-directory))
+         (gulpfile (locate-dominating-file (or dir default-directory)
+                                           "gulpfile.js")))
+    (when gulpfile
+      (expand-file-name "gulpfile.js" gulpfile))))
 
 (defun gulp--get-tasks-from-gulp ()
   "Ask gulp for a task list."
@@ -71,17 +82,27 @@ If GULPFILE is nil, remove task list for `gulp--get-gulpfile'."
 (defun gulp--get-tasks-from-cache (&optional gulpfile)
   "Lookup for a task list for GULPFILE in `gulp--task-cache'.
 If GULPFILE is absent, its value is takend from
-`gulp--get-gulpfile'."
-  (let ((gulpfile (or gulpfile (gulp--get-gulpfile))))
+`gulp--current-gulpfile'."
+  (let ((gulpfile (or gulpfile (gulp--current-gulpfile))))
     (cdr (assoc gulpfile gulp--task-cache))))
 
-(defun gulp--get-tasks ()
-  "Return a list of gulp tasks for the current project."
-  (let* ((gulpfile (gulp--get-gulpfile)))
-    (or (gulp--get-tasks-from-cache gulpfile)
-        (let ((tasks (gulp--get-tasks-from-gulp)))
-          (gulp--add-to-cache gulpfile tasks)
-          tasks))))
+(defun gulp--get-gulpfiles-from-cache ()
+  "Return a list of all gulpfiles in `gulp--task-cache'."
+  (mapcar #'car gulp--task-cache))
+
+(defun gulp--gulpfile-from-cache ()
+  "Let the user choose a gulpfile from the cache."
+  (let ((gulpfiles (gulp--get-gulpfiles-from-cache)))
+    (when gulpfiles
+      (completing-read "Choose a gulpfile: " gulpfiles))))
+
+(defun gulp--get-tasks (gulpfile)
+  "Return a list of gulp tasks for GULPFILE.
+Either use `gulp--task-cache' or run gulp to get the tasks."
+  (or (gulp--get-tasks-from-cache gulpfile)
+      (let ((tasks (gulp--get-tasks-from-gulp)))
+        (gulp--add-to-cache gulpfile tasks)
+        tasks)))
 
 (defun gulp--get-buffer-name (&rest _)
   "Return the name of a gulp task buffer."
